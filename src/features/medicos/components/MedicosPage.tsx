@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MedicoInput } from '../schema';
+import { Button } from '@/components/ui/button';
+import { Medico, MedicoInput } from '../schema';
 import { MedicoList } from './MedicoList';
 import { MedicoForm } from './MedicoForm';
-import { MedicoListItem } from '../schema';
 import {
   listarMedicos,
   criarMedico,
@@ -13,115 +13,84 @@ import {
 } from '../actions';
 
 export function MedicosPage() {
-  const [medicos, setMedicos] = useState<MedicoListItem[]>([]);
-  const [editando, setEditando] = useState<MedicoInput | null>(null);
+  const [medicos, setMedicos] = useState<Medico[]>([]);
+  const [editingMedico, setEditingMedico] = useState<Medico | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchMedicos() {
-      try {
-        const dados = await listarMedicos();
-        setMedicos(dados as MedicoListItem[]);
-      } catch (error) {
-        console.error('Erro ao carregar médicos:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchMedicos();
+    loadMedicos();
   }, []);
 
-  async function handleCreate(data: FormData) {
-    setIsSaving(true);
+  async function loadMedicos() {
     try {
-      await criarMedico(data);
-      const dadosAtualizados = await listarMedicos();
-      setMedicos(dadosAtualizados);
-      setEditando(null);
+      const dados = await listarMedicos();
+      setMedicos(dados as Medico[]);
     } catch (error) {
-      console.error('Erro ao criar médico:', error);
+      console.error('Erro ao carregar médicos:', error);
     } finally {
-      setIsSaving(false);
+      setIsLoading(false);
     }
   }
 
-  async function handleEdit(data: FormData) {
-    setIsSaving(true);
-    setIsCreating(false);
-    try {
-      await editarMedico(data);
-      const dadosAtualizados = await listarMedicos();
-      setMedicos(dadosAtualizados);
-      setEditando(null);
-    } catch (error) {
-      console.error('Erro ao editar médico:', error);
-    } finally {
-      setIsSaving(false);
+  async function handleSubmit(prevState: any, data: FormData) {
+    const action = isCreating ? criarMedico : editarMedico;
+    const result = await action(prevState, data);
+
+    if (result?.success) {
+      await loadMedicos();
+      setEditingMedico(null);
+      setIsCreating(false);
     }
+
+    return result;
   }
 
   async function handleDelete(id: string) {
-    setIsSaving(true);
-    try {
-      await deletarMedico(id);
-      const dadosAtualizados = await listarMedicos();
-      setMedicos(dadosAtualizados);
-    } catch (error) {
-      console.error('Erro ao deletar médico:', error);
-    } finally {
-      setIsSaving(false);
+    const result = await deletarMedico(id);
+    if (result?.success) {
+      await loadMedicos();
     }
   }
 
-  function handleEditClick(medico: MedicoInput) {
-    //console.log('Médico sendo editado:', medico); // Adicione este log
-    setEditando(medico);
+  function handleCreateNew() {
+    setEditingMedico(null);
+    setIsCreating(true);
+  }
+
+  function handleEdit(medico: Medico) {
+    setEditingMedico(medico);
     setIsCreating(false);
   }
 
   function handleCancel() {
-    setEditando(null);
+    setEditingMedico(null);
+    setIsCreating(false);
   }
+
+  const showForm = isCreating || editingMedico;
 
   return (
     <div className='p-6 max-w-4xl mx-auto'>
       <h1 className='text-3xl font-bold mb-6'>Gerenciamento de Médicos</h1>
 
-      {editando ? (
+      {showForm ? (
         <MedicoForm
-          initialData={editando}
-          onSubmit={isCreating ? handleCreate : handleEdit}
-          onCancel={() => {
-            setEditando(null);
-            setIsCreating(false);
-          }}
-          isSaving={isSaving}
+          initialData={editingMedico || undefined}
+          onSubmit={handleSubmit}
+          onCancel={handleCancel}
         />
       ) : (
         <>
-          <button
-            className='btn btn-primary mb-4'
-            onClick={() => {
-              setEditando({
-                nome: '',
-                crm: '',
-                conselho: '',
-                especialidade: 'CARDIOLOGIA',
-              });
-              setIsCreating(true);
-            }}
-          >
+          <Button onClick={handleCreateNew} className='mb-4'>
             Novo Médico
-          </button>
+          </Button>
           {isLoading ? (
             <p>Carregando...</p>
           ) : (
             <MedicoList
               medicos={medicos}
-              onEdit={handleEditClick}
+              onEdit={handleEdit}
               onDelete={handleDelete}
             />
           )}

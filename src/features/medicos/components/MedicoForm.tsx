@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useActionState, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,84 +15,62 @@ import { MedicoInput, especialidades, Especialidade } from '../schema';
 
 interface MedicoFormProps {
   initialData?: MedicoInput;
-  onSubmit: (data: FormData) => Promise<void>;
+  onSubmit: (prevState: any, data: FormData) => Promise<any>;
   onCancel: () => void;
-  isSaving: boolean;
 }
 
 export function MedicoForm({
   initialData,
   onSubmit,
   onCancel,
-  isSaving,
 }: MedicoFormProps) {
-  const [nome, setNome] = useState(initialData?.nome || '');
-  const [crm, setCrm] = useState(initialData?.crm || '');
-  const [conselho, setConselho] = useState(initialData?.conselho || '');
+  const [state, formAction, isPending] = useActionState(onSubmit, {
+    success: false,
+  });
   const [especialidade, setEspecialidade] = useState<Especialidade>(
     initialData?.especialidade || 'CARDIOLOGIA'
   );
 
-  useEffect(() => {
-    setNome(initialData?.nome || '');
-    setCrm(initialData?.crm || '');
-    setConselho(initialData?.conselho || '');
-    setEspecialidade(initialData?.especialidade || 'CARDIOLOGIA');
-  }, [initialData]);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const formData = new FormData();
-    if (initialData?.id) formData.append('id', initialData.id);
-    formData.append('nome', nome);
-    formData.append('crm', crm);
-    formData.append('conselho', conselho);
-    formData.append('especialidade', especialidade);
-
-    // // --- ADICIONE ESTE CONSOLE.LOG ---
-    // for (let pair of formData.entries()) {
-    //   console.log(pair[0] + ': ' + pair[1]);
-    // }
-    // // ---------------------------------
-    await onSubmit(formData);
-  }
+  const handleEspecialidadeChange = (value: string) => {
+    setEspecialidade(value as Especialidade);
+  };
 
   return (
-    <form onSubmit={handleSubmit} className='space-y-4 max-w-md'>
+    <form action={formAction} className='space-y-4 max-w-md'>
+      {initialData?.id && (
+        <input type='hidden' name='id' value={initialData.id} />
+      )}
+      <input type='hidden' name='especialidade' value={especialidade} />
+
       <div>
         <Label htmlFor='nome'>Nome</Label>
         <Input
           id='nome'
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
+          name='nome'
+          defaultValue={initialData?.nome}
           required
         />
       </div>
+
       <div>
         <Label htmlFor='crm'>CRM</Label>
-        <Input
-          id='crm'
-          value={crm}
-          onChange={(e) => setCrm(e.target.value)}
-          required
-        />
+        <Input id='crm' name='crm' defaultValue={initialData?.crm} required />
       </div>
+
       <div>
         <Label htmlFor='conselho'>Conselho</Label>
         <Input
           id='conselho'
-          value={conselho}
-          onChange={(e) => setConselho(e.target.value)}
+          name='conselho'
+          defaultValue={initialData?.conselho}
           required
         />
       </div>
+
       <div>
         <Label htmlFor='especialidade'>Especialidade</Label>
-        <Select
-          value={especialidade}
-          onValueChange={(value) => setEspecialidade(value as Especialidade)}
-        >
-          <SelectTrigger id='especialidade'>
+        <Select value={especialidade} onValueChange={handleEspecialidadeChange}>
+          <SelectTrigger>
             <SelectValue placeholder='Selecione uma especialidade' />
           </SelectTrigger>
           <SelectContent>
@@ -104,15 +82,20 @@ export function MedicoForm({
           </SelectContent>
         </Select>
       </div>
+
+      {state?.error && (
+        <div className='text-red-500 text-sm'>{state.error}</div>
+      )}
+
       <div className='flex gap-2'>
-        <Button type='submit' disabled={isSaving}>
-          {isSaving ? 'Salvando...' : 'Salvar'}
+        <Button type='submit' disabled={isPending}>
+          {isPending ? 'Salvando...' : 'Salvar'}
         </Button>
         <Button
           type='button'
           variant='outline'
           onClick={onCancel}
-          disabled={isSaving}
+          disabled={isPending}
         >
           Cancelar
         </Button>

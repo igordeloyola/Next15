@@ -1,52 +1,60 @@
 'use client';
 
-import { MedicoListItem } from '../schema';
+import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Medico } from '../schema';
 
 interface MedicoListProps {
-  medicos: MedicoListItem[]; // id obrigatório
-  onEdit: (medico: MedicoListItem) => void;
+  medicos: Medico[];
+  onEdit: (medico: Medico) => void;
   onDelete: (id: string) => Promise<void>;
 }
 
 export function MedicoList({ medicos, onEdit, onDelete }: MedicoListProps) {
   return (
-    <table className='w-full border-collapse'>
-      <thead>
-        <tr>
-          <th className='border p-2'>Nome</th>
-          <th className='border p-2'>CRM</th>
-          <th className='border p-2'>Conselho</th>
-          <th className='border p-2'>Especialidade</th>
-          <th className='border p-2'>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Nome</TableHead>
+          <TableHead>CRM</TableHead>
+          <TableHead>Conselho</TableHead>
+          <TableHead>Especialidade</TableHead>
+          <TableHead>Ações</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {medicos.map((medico) => (
-          <tr key={medico.id}>
-            <td className='border p-2'>
-              {medico.nome}
-              <p>{medico.id}</p>
-            </td>
-            <td className='border p-2'>{medico.crm}</td>
-            <td className='border p-2'>{medico.conselho}</td>
-            <td className='border p-2'>{medico.especialidade}</td>
-            <td className='border p-2 flex gap-2'>
-              <button
-                className='btn btn-primary'
+          <TableRow key={medico.id}>
+            <TableCell>{medico.nome}</TableCell>
+            <TableCell>{medico.crm}</TableCell>
+            <TableCell>{medico.conselho}</TableCell>
+            <TableCell>{medico.especialidade}</TableCell>
+            <TableCell className='flex gap-2'>
+              <Button
+                variant='outline'
+                size='sm'
                 onClick={() => onEdit(medico)}
               >
                 Editar
-              </button>
-              <button
-                className='btn btn-outline btn-error'
-                onClick={() => onDelete(medico.id)} // id é string garantido
+              </Button>
+              <Button
+                variant='destructive'
+                size='sm'
+                onClick={() => onDelete(medico.id)}
               >
                 Deletar
-              </button>
-            </td>
-          </tr>
+              </Button>
+            </TableCell>
+          </TableRow>
         ))}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   );
 }

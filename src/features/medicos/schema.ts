@@ -9,7 +9,7 @@ export const especialidades = [
 ] as const;
 
 export const medicoSchema = z.object({
-  id: z.string().optional(), // continua opcional para criação
+  id: z.string().optional(),
   nome: z.string().min(1, 'Nome é obrigatório'),
   crm: z.string().min(1, 'CRM é obrigatório'),
   conselho: z.string().min(1, 'Conselho é obrigatório'),
@@ -18,10 +18,7 @@ export const medicoSchema = z.object({
   }),
 });
 
-// Tipo para criação/edição (id opcional)
+// Simplificar tipos
+export type Medico = z.infer<typeof medicoSchema> & { id: string };
 export type MedicoInput = z.infer<typeof medicoSchema>;
-
-// Tipo para listagem e manipulação (id obrigatório)
-export type MedicoListItem = Omit<MedicoInput, 'id'> & { id: string };
-
 export type Especialidade = (typeof especialidades)[number];

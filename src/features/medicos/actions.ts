@@ -2,54 +2,86 @@
 
 import { prisma } from '@/lib/prisma';
 import { medicoSchema } from './schema';
+// Adicionar imports
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 export async function listarMedicos() {
-  return await prisma.medico.findMany();
+  try {
+    return await prisma.medico.findMany({
+      orderBy: { nome: 'asc' },
+    });
+  } catch (error) {
+    console.error('Erro ao listar médicos:', error);
+    return [];
+  }
 }
 
-export async function criarMedico(formData: FormData) {
-  const data = Object.fromEntries(formData.entries());
-  const parsed = medicoSchema.omit({ id: true }).safeParse(data); // omite id na criação
-
-  if (!parsed.success) {
-    throw new Error(JSON.stringify(parsed.error.format()));
+// Substituir função criarMedico
+export async function criarMedico(prevState: any, formData: FormData) {
+  if (!formData) {
+    return { error: 'Dados do formulário não encontrados' };
   }
 
-  const medico = parsed.data;
+  const data = Object.fromEntries(formData.entries());
+  const parsed = medicoSchema.omit({ id: true }).safeParse(data);
 
-  await prisma.medico.create({
-    data: {
-      nome: medico.nome,
-      crm: medico.crm,
-      conselho: medico.conselho,
-      especialidade: medico.especialidade,
-    },
-  });
+  if (!parsed.success) {
+    return { error: 'Dados inválidos', details: parsed.error.format() };
+  }
+
+  try {
+    await prisma.medico.create({
+      data: parsed.data,
+    });
+    revalidatePath('/medicos');
+    return { success: true };
+  } catch (error) {
+    return { error: 'Erro ao criar médico' };
+  }
 }
 
-export async function editarMedico(formData: FormData) {
+// Substituir função editarMedico
+export async function editarMedico(prevState: any, formData: FormData) {
+  if (!formData) {
+    return { error: 'Dados do formulário não encontrados' };
+  }
+
   const data = Object.fromEntries(formData.entries());
   const parsed = medicoSchema.safeParse(data);
 
   if (!parsed.success) {
-    throw new Error(JSON.stringify(parsed.error.format()));
+    return { error: 'Dados inválidos', details: parsed.error.format() };
   }
 
-  const medico = parsed.data;
+  if (!parsed.data.id) {
+    return { error: 'ID do médico é obrigatório' };
+  }
 
-  if (!medico.id) throw new Error('ID do médico é obrigatório');
-
-  await prisma.medico.update({
-    where: { id: medico.id },
-    data: {
-      nome: medico.nome,
-      crm: medico.crm,
-      conselho: medico.conselho,
-      especialidade: medico.especialidade,
-    },
-  });
+  try {
+    await prisma.medico.update({
+      where: { id: parsed.data.id },
+      data: {
+        nome: parsed.data.nome,
+        crm: parsed.data.crm,
+        conselho: parsed.data.conselho,
+        especialidade: parsed.data.especialidade,
+      },
+    });
+    revalidatePath('/medicos');
+    return { success: true };
+  } catch (error) {
+    return { error: 'Erro ao editar médico' };
+  }
 }
 
+// Substituir função deletarMedico
 export async function deletarMedico(id: string) {
-  await prisma.medico.delete({ where: { id } });
+  try {
+    await prisma.medico.delete({ where: { id } });
+    revalidatePath('/medicos');
+    return { success: true };
+  } catch (error) {
+    return { error: 'Erro ao deletar médico' };
+  }
 }
