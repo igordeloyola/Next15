@@ -4,8 +4,13 @@
 import { prisma } from '@/lib/prisma';
 import { medicoSchema } from './schema';
 import { revalidatePath } from 'next/cache';
-// Remova 'redirect' se não estiver usando em nenhuma outra parte do arquivo
-// import { redirect } from 'next/navigation';
+
+// Definir o tipo de retorno consistente para as actions
+type ActionState = {
+  success?: boolean;
+  error?: string;
+  details?: Record<string, unknown>; // Alterado de 'any' para um tipo mais específico
+};
 
 export async function listarMedicos() {
   try {
@@ -13,14 +18,15 @@ export async function listarMedicos() {
       orderBy: { nome: 'asc' },
     });
   } catch (error: unknown) {
-    // Adicione o tipo 'unknown'
-    console.error('Erro ao listar médicos:', error); // Use a variável 'error'
+    console.error('Erro ao listar médicos:', error);
     return [];
   }
 }
 
-export async function criarMedico(prevState: unknown, formData: FormData) {
-  // Use 'unknown'
+export async function criarMedico(
+  prevState: ActionState, // Alterado de 'unknown' para 'ActionState'
+  formData: FormData
+): Promise<ActionState> {
   if (!formData) {
     return { error: 'Dados do formulário não encontrados' };
   }
@@ -39,14 +45,15 @@ export async function criarMedico(prevState: unknown, formData: FormData) {
     revalidatePath('/medicos');
     return { success: true };
   } catch (error: unknown) {
-    // Use 'unknown'
-    console.error('Erro ao criar médico:', error); // Use a variável 'error'
+    console.error('Erro ao criar médico:', error);
     return { error: 'Erro ao criar médico' };
   }
 }
 
-export async function editarMedico(prevState: unknown, formData: FormData) {
-  // Use 'unknown'
+export async function editarMedico(
+  prevState: ActionState, // Alterado de 'unknown' para 'ActionState'
+  formData: FormData
+): Promise<ActionState> {
   if (!formData) {
     return { error: 'Dados do formulário não encontrados' };
   }
@@ -75,20 +82,18 @@ export async function editarMedico(prevState: unknown, formData: FormData) {
     revalidatePath('/medicos');
     return { success: true };
   } catch (error: unknown) {
-    // Use 'unknown'
-    console.error('Erro ao editar médico:', error); // Use a variável 'error'
+    console.error('Erro ao editar médico:', error);
     return { error: 'Erro ao editar médico' };
   }
 }
 
-export async function deletarMedico(id: string) {
+export async function deletarMedico(id: string): Promise<ActionState> {
   try {
     await prisma.medico.delete({ where: { id } });
     revalidatePath('/medicos');
     return { success: true };
   } catch (error: unknown) {
-    // <-- Use 'unknown' aqui também
-    console.error('Erro ao deletar médico:', error); // <-- Adicione esta linha para usar 'error'
+    console.error('Erro ao deletar médico:', error);
     return { error: 'Erro ao deletar médico' };
   }
 }

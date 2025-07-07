@@ -1,7 +1,8 @@
 // src/features/medicos/components/MedicoForm.tsx
 'use client';
 
-import { useActionState, useState } from 'react';
+// REMOVIDO: useActionState do import, pois ele será usado em MedicosPage.tsx
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,35 +15,26 @@ import {
 } from '@/components/ui/select';
 import { MedicoInput, especialidades, Especialidade } from '../schema';
 
-// Definir um tipo para o resultado esperado da ação
-// Este tipo descreve a estrutura do objeto que suas 'server actions' retornam
-type ActionState = {
-  success?: boolean;
-  error?: string;
-  details?: any; // Mantenha 'any' para 'details' se a estrutura for muito variada
-};
+// REMOVIDO: A definição de ActionState aqui, pois ela está em actions.ts agora
+// e não é diretamente usada por este componente (apenas a interface de props)
 
 interface MedicoFormProps {
   initialData?: MedicoInput;
-  // A propriedade 'onSubmit' agora espera uma função que retorna uma Promise de 'ActionState'
-  // e o 'prevState' também é tipado como 'ActionState'.
-  onSubmit: (prevState: ActionState, data: FormData) => Promise<ActionState>;
+  // A prop 'formAction' será a função retornada por useActionState em MedicosPage.tsx
+  // Ela não precisa de 'prevState' ou Promise aqui, pois é a 'action' do formulário
+  formAction: (formData: FormData) => void; // Apenas recebe FormData e não retorna nada diretamente
   onCancel: () => void;
+  isPending: boolean; // Recebe o estado de carregamento de useActionState
 }
 
 export function MedicoForm({
   initialData,
-  onSubmit,
+  formAction, // Agora recebe formAction
   onCancel,
+  isPending, // Agora recebe isPending
 }: MedicoFormProps) {
-  // O 'useActionState' agora está explicitamente tipado com 'ActionState' para o estado
-  // e 'FormData' para o tipo do input da ação.
-  const [state, formAction, isPending] = useActionState<ActionState, FormData>(
-    onSubmit,
-    {
-      success: false, // O estado inicial também deve corresponder ao 'ActionState'
-    }
-  );
+  // REMOVIDO: A chamada a useActionState aqui. O erro 21:13 deve desaparecer com isso.
+
   const [especialidade, setEspecialidade] = useState<Especialidade>(
     initialData?.especialidade || 'CARDIOLOGIA'
   );
@@ -52,6 +44,7 @@ export function MedicoForm({
   };
 
   return (
+    // Use 'action={formAction}' para integrar com useActionState
     <form action={formAction} className='space-y-4 max-w-md'>
       {initialData?.id && (
         <input type='hidden' name='id' value={initialData.id} />
@@ -99,9 +92,7 @@ export function MedicoForm({
         </Select>
       </div>
 
-      {state?.error && (
-        <div className='text-red-500 text-sm'>{state.error}</div>
-      )}
+      {/* Não há 'state.error' direto aqui, MedicosPage.tsx que irá lidar com ele */}
 
       <div className='flex gap-2'>
         <Button type='submit' disabled={isPending}>

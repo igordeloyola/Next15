@@ -1,6 +1,7 @@
+// src/features/medicos/components/MedicosPage.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react'; // REMOVIDO: 'use' da importação
 import { Button } from '@/components/ui/button';
 import { Medico } from '../schema';
 import { MedicoList } from './MedicoList';
@@ -11,12 +12,48 @@ import {
   editarMedico,
   deletarMedico,
 } from '../actions';
+import { useActionState } from 'react';
+
+// Definir o tipo de retorno consistente para as actions (deve ser o mesmo que em actions.ts)
+type ActionState = {
+  success?: boolean;
+  error?: string;
+  details?: Record<string, unknown>; // Alterado de 'any' para um tipo mais específico
+};
 
 export function MedicosPage() {
   const [medicos, setMedicos] = useState<Medico[]>([]);
   const [editingMedico, setEditingMedico] = useState<Medico | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Função para lidar com a submissão do formulário (criação/edição)
+  // Esta função é a que será passada para useActionState
+  const handleFormSubmit = async (
+    prevState: ActionState,
+    formData: FormData
+  ): Promise<ActionState> => {
+    let result: ActionState;
+    if (isCreating) {
+      result = await criarMedico(prevState, formData);
+    } else {
+      result = await editarMedico(prevState, formData);
+    }
+
+    if (result.success) {
+      await loadMedicos(); // Recarrega os médicos após sucesso
+      setEditingMedico(null);
+      setIsCreating(false);
+    }
+    return result;
+  };
+
+  // Usar useActionState para gerenciar o estado da submissão do formulário
+  // A tipagem aqui é crucial para evitar 'any'
+  const [formState, formAction, isPending] = useActionState<
+    ActionState,
+    FormData
+  >(handleFormSubmit, { success: false });
 
   useEffect(() => {
     loadMedicos();
@@ -33,23 +70,13 @@ export function MedicosPage() {
     }
   }
 
-  async function handleSubmit(prevState: unknown, data: FormData) {
-    const action = isCreating ? criarMedico : editarMedico;
-    const result = await action(prevState, data);
-
-    if (result?.success) {
-      await loadMedicos();
-      setEditingMedico(null);
-      setIsCreating(false);
-    }
-
-    return result;
-  }
-
   async function handleDelete(id: string) {
     const result = await deletarMedico(id);
     if (result?.success) {
       await loadMedicos();
+    } else {
+      console.error('Erro ao deletar:', result?.error);
+      alert('Erro ao deletar médico: ' + result?.error);
     }
   }
 
@@ -77,8 +104,9 @@ export function MedicosPage() {
       {showForm ? (
         <MedicoForm
           initialData={editingMedico || undefined}
-          onSubmit={handleSubmit}
+          formAction={formAction}
           onCancel={handleCancel}
+          isPending={isPending}
         />
       ) : (
         <>
@@ -95,6 +123,16 @@ export function MedicosPage() {
             />
           )}
         </>
+      )}
+
+      {/* Exibir feedback do formulário (sucesso/erro) */}
+      {formState?.error && (
+        <div className='text-red-500 text-sm mt-4'>{formState.error}</div>
+      )}
+      {formState?.success && !isPending && (
+        <div className='text-green-500 text-sm mt-4'>
+          Operação realizada com sucesso!
+        </div>
       )}
     </div>
   );
