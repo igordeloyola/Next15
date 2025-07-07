@@ -1,3 +1,4 @@
+// src/features/medicos/components/MedicoForm.tsx
 'use client';
 
 import { useActionState, useState } from 'react';
@@ -13,9 +14,19 @@ import {
 } from '@/components/ui/select';
 import { MedicoInput, especialidades, Especialidade } from '../schema';
 
+// Definir um tipo para o resultado esperado da ação
+// Este tipo descreve a estrutura do objeto que suas 'server actions' retornam
+type ActionState = {
+  success?: boolean;
+  error?: string;
+  details?: any; // Mantenha 'any' para 'details' se a estrutura for muito variada
+};
+
 interface MedicoFormProps {
   initialData?: MedicoInput;
-  onSubmit: (prevState: any, data: FormData) => Promise<any>;
+  // A propriedade 'onSubmit' agora espera uma função que retorna uma Promise de 'ActionState'
+  // e o 'prevState' também é tipado como 'ActionState'.
+  onSubmit: (prevState: ActionState, data: FormData) => Promise<ActionState>;
   onCancel: () => void;
 }
 
@@ -24,9 +35,14 @@ export function MedicoForm({
   onSubmit,
   onCancel,
 }: MedicoFormProps) {
-  const [state, formAction, isPending] = useActionState(onSubmit, {
-    success: false,
-  });
+  // O 'useActionState' agora está explicitamente tipado com 'ActionState' para o estado
+  // e 'FormData' para o tipo do input da ação.
+  const [state, formAction, isPending] = useActionState<ActionState, FormData>(
+    onSubmit,
+    {
+      success: false, // O estado inicial também deve corresponder ao 'ActionState'
+    }
+  );
   const [especialidade, setEspecialidade] = useState<Especialidade>(
     initialData?.especialidade || 'CARDIOLOGIA'
   );

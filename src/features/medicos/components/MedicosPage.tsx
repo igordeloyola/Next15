@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Medico, MedicoInput } from '../schema';
+import { Medico } from '../schema';
 import { MedicoList } from './MedicoList';
 import { MedicoForm } from './MedicoForm';
 import {
@@ -33,7 +33,7 @@ export function MedicosPage() {
     }
   }
 
-  async function handleSubmit(prevState: any, data: FormData) {
+  async function handleSubmit(prevState: unknown, data: FormData) {
     const action = isCreating ? criarMedico : editarMedico;
     const result = await action(prevState, data);
 
